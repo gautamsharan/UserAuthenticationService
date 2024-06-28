@@ -20,3 +20,7 @@ public class Session extends BaseModel {
     @ManyToOne
     private User user;
 }
+
+
+git config user.name "gautamsharan"
+git config user.email "gautam.sharan007@gmail.com"
