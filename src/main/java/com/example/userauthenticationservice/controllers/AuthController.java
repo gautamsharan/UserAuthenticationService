@@ -53,7 +53,11 @@ public class AuthController {
 
     @PostMapping("/logout")
     public void logout(@RequestBody LogoutRequestDto logoutRequestDto) {
-
+        try {
+            authService.logout(logoutRequestDto.getEmail());
+        } catch (IllegalArgumentException e) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, e.getMessage());
+        }
     }
 
     @PostMapping("/forgetPassword")

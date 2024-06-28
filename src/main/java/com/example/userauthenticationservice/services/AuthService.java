@@ -89,4 +89,23 @@ public class AuthService implements IAuthService {
 
         return new Pair<>(user, headers);
     }
+
+    @Override
+    public void logout(String email) throws IllegalArgumentException {
+        Optional<User> userOptional = userRepository.findByEmail(email);
+        if (userOptional.isEmpty()) {
+            throw new IllegalArgumentException("User not found");
+        }
+
+        User user = userOptional.get();
+        Optional<Session> sessionOptional = sessionRepository.findByUserId(user.getId());
+
+        if (sessionOptional.isEmpty()) {
+            throw new IllegalArgumentException("Session not found");
+        }
+
+        Session session = sessionOptional.get();
+        session.setSessionStatus(SessionStatus.EXPIRED);
+        sessionRepository.save(session);
+    }
 }
