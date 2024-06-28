@@ -3,8 +3,10 @@ package com.example.userauthenticationservice.controllers;
 import com.example.userauthenticationservice.dtos.*;
 import com.example.userauthenticationservice.models.User;
 import com.example.userauthenticationservice.services.IAuthService;
+import org.antlr.v4.runtime.misc.Pair;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -23,19 +25,27 @@ public class AuthController {
 
     @PostMapping("/signup")
     public ResponseEntity<UserDto> signUp(@RequestBody SignUpRequestDto signUpRequestDto) {
-        User user = authService.signup(signUpRequestDto.getEmail(), signUpRequestDto.getPassword());
+        User user = authService.signup(signUpRequestDto.getEmail(),
+                signUpRequestDto.getPassword());
         return new ResponseEntity<>(userDtoFromUser(user), HttpStatus.CREATED);
     }
 
     @PostMapping("/login")
     public ResponseEntity<UserDto> login(@RequestBody LoginRequestDto loginRequestDto) {
         try {
-            User user = authService.login(loginRequestDto.getEmail(), loginRequestDto.getPassword());
+            Pair<User, MultiValueMap<String, String>> response = authService.login(
+                    loginRequestDto.getEmail(),
+                    loginRequestDto.getPassword());
+
+            User user = response.a;
+            MultiValueMap<String, String> headers = response.b;
+
             if (user == null) {
-                throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid email or password");
+                throw new ResponseStatusException(HttpStatus.UNAUTHORIZED,
+                        "Invalid email or password");
             }
 
-            return new ResponseEntity<>(userDtoFromUser(user), HttpStatus.OK);
+            return new ResponseEntity<>(userDtoFromUser(user), headers, HttpStatus.OK);
         } catch (ResponseStatusException e) {
             return new ResponseEntity<>(null, HttpStatus.UNAUTHORIZED);
         }
