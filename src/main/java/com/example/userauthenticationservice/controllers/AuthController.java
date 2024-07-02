@@ -1,6 +1,7 @@
 package com.example.userauthenticationservice.controllers;
 
 import com.example.userauthenticationservice.dtos.*;
+import com.example.userauthenticationservice.exceptions.AuthenticationFailedException;
 import com.example.userauthenticationservice.models.User;
 import com.example.userauthenticationservice.services.IAuthService;
 import org.antlr.v4.runtime.misc.Pair;
@@ -66,8 +67,14 @@ public class AuthController {
     }
 
     @PostMapping("/validateToken")
-    public void validateToken(@RequestBody ValidateTokenRequestDto validateTokenRequestDto) {
+    public void validateToken(@RequestBody ValidateTokenRequestDto validateTokenRequestDto) throws AuthenticationFailedException {
+        boolean result = authService.validateToken(
+                validateTokenRequestDto.getToken(),
+                validateTokenRequestDto.getUserId());
 
+        if (!result) {
+            throw new AuthenticationFailedException("Wrong Credentials");
+        }
     }
 
     private UserDto userDtoFromUser(User user) {

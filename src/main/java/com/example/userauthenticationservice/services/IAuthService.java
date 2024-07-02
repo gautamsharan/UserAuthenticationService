@@ -10,4 +10,6 @@ public interface IAuthService {
     Pair<User, MultiValueMap<String, String>> login(String email, String password);
 
     void logout(String email) throws IllegalArgumentException;
+
+    boolean validateToken(String token, Long userId) throws IllegalArgumentException;
 }
