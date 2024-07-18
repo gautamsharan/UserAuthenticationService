@@ -1,10 +1,14 @@
 package com.example.userauthenticationservice.services;
 
+import com.example.userauthenticationservice.clients.KafkaProducerClient;
+import com.example.userauthenticationservice.dtos.MessageDto;
 import com.example.userauthenticationservice.models.Session;
 import com.example.userauthenticationservice.models.SessionStatus;
 import com.example.userauthenticationservice.models.User;
 import com.example.userauthenticationservice.repositories.SessionRepository;
 import com.example.userauthenticationservice.repositories.UserRepository;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtParser;
 import io.jsonwebtoken.Jwts;
@@ -34,16 +38,24 @@ public class AuthService implements IAuthService {
 
     private final SecretKey secretKey;
 
+    private KafkaProducerClient kafkaProducerClient;
+
+    private ObjectMapper objectMapper;
+
     public AuthService(
             UserRepository userRepository,
             BCryptPasswordEncoder bCryptPasswordEncoder,
             SessionRepository sessionRepository,
-            SecretKey secretKey
+            SecretKey secretKey,
+            KafkaProducerClient kafkaProducerClient,
+            ObjectMapper objectMapper
     ) {
         this.userRepository = userRepository;
         this.bCryptPasswordEncoder = bCryptPasswordEncoder;
         this.sessionRepository = sessionRepository;
         this.secretKey = secretKey;
+        this.kafkaProducerClient = kafkaProducerClient;
+        this.objectMapper = objectMapper;
     }
 
     @Override
@@ -57,6 +69,19 @@ public class AuthService implements IAuthService {
         user.setEmail(email);
         user.setPassword(bCryptPasswordEncoder.encode(password));
         userRepository.save(user);
+
+        //send email
+        MessageDto messageDto = new MessageDto();
+        messageDto.setTo(email);
+        messageDto.setFrom("gautamsharan.scaler@gmail.com");
+        messageDto.setSubject("Welcome to project");
+        messageDto.setBody("Hope you are doing well!!");
+        try {
+            kafkaProducerClient.sendMessage("signup", objectMapper.writeValueAsString(messageDto));
+        } catch (JsonProcessingException e) {
+            System.out.println(e.getMessage());
+            throw new RuntimeException(e);
+        }
 
         return user;
     }
@@ -79,6 +104,7 @@ public class AuthService implements IAuthService {
         jwtData.put("role", user.getRoles());
         long now = System.currentTimeMillis();
         jwtData.put("iat", now);
+        // 10 mins
         jwtData.put("exp", now + 1000 * 60 * 10);
 
         String token = Jwts.builder().claims(jwtData).signWith(secretKey).compact();
